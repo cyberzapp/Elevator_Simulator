@@ -1,181 +1,159 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import ElevatorShaft from "./components/ElevatorShaft";
+import ExternalControls from "./components/ExternalControls";
+import CustomCursor from "./components/CustomCursor";
+import { Layers, Activity } from "lucide-react";
 
-// 🚀 Elevator Simulator V4 (Cinematic UI + Smart System)
-export default function ElevatorSimulatorV4() {
-  const totalFloors = 10;
-  const elevatorCount = 3;
+const FLOORS = 11;
+const ELEVATORS = 3;
 
+const createElevator = (id) => ({
+  id,
+  currentFloor: 0,
+  direction: "idle",
+  targets: [],
+  doorsOpen: false,
+});
+
+export default function App() {
   const [elevators, setElevators] = useState(
-    Array.from({ length: elevatorCount }, (_, i) => ({
-      id: i,
-      currentFloor: 0,
-      direction: "idle",
-      upQueue: [],
-      downQueue: [],
-      doorsOpen: false,
-    }))
+    Array.from({ length: ELEVATORS }, (_, i) => createElevator(i))
   );
+  const [totalCalls, setTotalCalls] = useState(0);
 
-  const [stats, setStats] = useState({ requests: 0 });
-
-  // 🎯 Smart Dispatch
-  const assignElevator = (floor) => {
-    setStats((s) => ({ ...s, requests: s.requests + 1 }));
-
+  const callElevator = (floor) => {
+    setTotalCalls((t) => t + 1);
     let best = null;
     let minCost = Infinity;
 
     elevators.forEach((e) => {
       let cost = Math.abs(e.currentFloor - floor);
-
-      if (
-        (e.direction === "up" && floor >= e.currentFloor) ||
-        (e.direction === "down" && floor <= e.currentFloor)
-      ) cost -= 2;
-
-      if (e.direction === "idle") cost -= 3;
+      if ((e.direction === "up" && floor >= e.currentFloor) || (e.direction === "down" && floor <= e.currentFloor)) cost -= 2;
+      if (e.direction === "idle") cost -= 4;
+      if (e.targets.includes(floor)) cost = 0; 
 
       if (cost < minCost) {
         minCost = cost;
         best = e.id;
       }
     });
+    updateElevatorTargets(best, floor);
+  };
 
+  const updateElevatorTargets = (id, floor) => {
     setElevators((prev) =>
       prev.map((e) => {
-        if (e.id !== best) return e;
-
-        if (floor > e.currentFloor) {
-          return {
-            ...e,
-            upQueue: [...new Set([...e.upQueue, floor])].sort((a, b) => a - b),
-          };
-        } else {
-          return {
-            ...e,
-            downQueue: [...new Set([...e.downQueue, floor])].sort((a, b) => b - a),
-          };
-        }
+        if (e.id !== id) return e;
+        if (e.targets.includes(floor)) return e;
+        return {
+          ...e,
+          targets: [...e.targets, floor].sort((a, b) => a - b),
+        };
       })
     );
   };
 
-  // Movement Engine
   useEffect(() => {
     const interval = setInterval(() => {
       setElevators((prev) =>
         prev.map((e) => {
-          if (e.upQueue.length === 0 && e.downQueue.length === 0) {
-            return { ...e, direction: "idle" };
-          }
+          if (e.targets.length === 0) return { ...e, direction: "idle" };
 
-          let { currentFloor, direction, upQueue, downQueue } = e;
+          let { currentFloor, direction, targets } = e;
+          if (direction === "idle") direction = targets[0] > currentFloor ? "up" : "down";
 
-          if (direction === "idle") {
-            direction = upQueue.length ? "up" : "down";
-          }
+          if (targets.includes(currentFloor)) return stop(e, currentFloor);
 
+          let next = currentFloor;
           if (direction === "up") {
-            const target = upQueue.find((f) => f >= currentFloor);
-            if (target !== undefined) {
-              if (currentFloor === target) return stop(e, "up", target);
-              return { ...e, currentFloor: currentFloor + 1, direction };
-            } else direction = "down";
+            const hasHigher = targets.some(f => f > currentFloor);
+            if (hasHigher) next += 1;
+            else direction = "down";
+          } else {
+            const hasLower = targets.some(f => f < currentFloor);
+            if (hasLower) next -= 1;
+            else direction = "up";
           }
 
-          if (direction === "down") {
-            const target = downQueue.find((f) => f <= currentFloor);
-            if (target !== undefined) {
-              if (currentFloor === target) return stop(e, "down", target);
-              return { ...e, currentFloor: currentFloor - 1, direction };
-            } else direction = "up";
-          }
-
-          return { ...e, direction };
+          return { ...e, currentFloor: next, direction };
         })
       );
-    }, 800);
-
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const stop = (e, dir, floor) => {
+  const stop = (e, floor) => {
     setTimeout(() => {
       setElevators((prev) =>
         prev.map((el) => {
           if (el.id !== e.id) return el;
-
           return {
             ...el,
             doorsOpen: false,
-            upQueue: el.upQueue.filter((f) => f !== floor),
-            downQueue: el.downQueue.filter((f) => f !== floor),
+            targets: el.targets.filter((f) => f !== floor),
           };
         })
       );
-    }, 1500);
-
+    }, 2000);
     return { ...e, doorsOpen: true };
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-4xl font-bold mb-6 text-center">🚀 Smart Elevator System</h1>
+    <div className="min-h-screen bg-[#050505] text-neutral-200 selection:bg-blue-500/30 cursor-none overflow-hidden">
+      <CustomCursor />
+      
+      {/* Background Ambience */}
+      <div className="fixed inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_50%_-20%,#1e3a8a,transparent)]" />
+      <div className="fixed inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
 
-      {/* Dashboard */}
-      <div className="flex justify-center gap-10 mb-8">
-        <div className="bg-gray-800 p-4 rounded-2xl shadow">
-          <p className="text-sm">Total Requests</p>
-          <p className="text-2xl font-bold">{stats.requests}</p>
-        </div>
-      </div>
-
-      {/* Elevators */}
-      <div className="flex justify-center gap-12">
-        {elevators.map((e) => (
-          <div key={e.id} className="text-center">
-            <p className="mb-2">Lift {e.id}</p>
-
-            <div className="relative h-80 w-20 border border-gray-600 flex flex-col-reverse">
-              {Array.from({ length: totalFloors }).map((_, i) => (
-                <div key={i} className="h-8 border-t text-xs flex items-center justify-center">
-                  {i}
-                </div>
-              ))}
-
-              {/* Elevator Cabin */}
-              <motion.div
-                animate={{ bottom: `${e.currentFloor * 32}px` }}
-                transition={{ type: "spring", stiffness: 80 }}
-                className="absolute w-full h-8 bg-green-400"
-              >
-                {e.doorsOpen && (
-                  <div className="flex">
-                    <div className="w-1/2 h-8 bg-black"></div>
-                    <div className="w-1/2 h-8 bg-black"></div>
-                  </div>
-                )}
-              </motion.div>
-            </div>
-
-            <p className="text-xs mt-2">{e.direction}</p>
+      <nav className="relative z-10 px-8 py-6 flex justify-between items-center border-b border-white/5 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+            <Layers className="text-white" size={20} />
           </div>
-        ))}
-      </div>
+          <span className="text-lg font-black tracking-tighter uppercase">NemoSense <span className="text-blue-500">Systems</span></span>
+        </div>
+        
+        <div className="flex items-center gap-6 text-xs font-mono text-neutral-500 uppercase tracking-widest">
+          <div className="flex items-center gap-2">
+            <Activity size={14} className="text-green-500" />
+            <span>Telemetry Active</span>
+          </div>
+          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-md">
+            Traffic: {totalCalls}
+          </div>
+        </div>
+      </nav>
 
-      {/* Controls */}
-      <div className="grid grid-cols-5 gap-3 mt-10 max-w-md mx-auto">
-        {Array.from({ length: totalFloors }).map((_, i) => (
-          <button
-            key={i}
-            onClick={() => assignElevator(i)}
-            className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg"
-          >
-            Call {i}
-          </button>
-        ))}
-      </div>
+      <main className="relative z-10 max-w-[1400px] mx-auto p-8 pt-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* Left: Visualization */}
+        <section className="lg:col-span-8 flex justify-around items-end bg-neutral-900/40 border border-white/5 rounded-[40px] p-12 min-h-[700px] backdrop-blur-3xl shadow-3xl">
+           {elevators.map((e) => (
+             <ElevatorShaft 
+               key={e.id} 
+               elevator={e} 
+               floors={FLOORS} 
+               onInternalCall={(f) => updateElevatorTargets(e.id, f)} 
+             />
+           ))}
+        </section>
+
+        {/* Right: Controls */}
+        <aside className="lg:col-span-4 space-y-8">
+          <div className="bg-neutral-900/40 border border-white/5 p-8 rounded-[32px] backdrop-blur-md">
+            <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-bold tracking-tight">Floor Interface</h2>
+                <span className="text-[10px] font-mono text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">AUTO DISPATCH</span>
+            </div>
+            <ExternalControls floors={FLOORS} onCall={callElevator} />
+          </div>
+        </aside>
+      </main>
+      
+      <footer className="fixed bottom-6 left-8 text-[10px] font-mono text-white/20 uppercase tracking-[0.4em]">
+        Cinematic Logistics Engine v4.0.2
+      </footer>
     </div>
   );
 }
