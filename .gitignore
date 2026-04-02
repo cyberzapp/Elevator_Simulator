@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build Output
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment Variables (Keep your secrets safe!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor & System Files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# Testing
+/coverage
+/.nyc_output
+
+# --- Hackathon/Project Clutter Prevention ---
+# These rules ignore common "noise" files in your root directory
+*.zip
+*.rar
+*.7z
+*.pdf
+archive/
+archive*/
+
+# Ignore loose images in the root (but allow them in src/assets)
+/*.png
+/*.jpg
+/*.jpeg
+/*.svg
+!/src/assets/
+!/public/
