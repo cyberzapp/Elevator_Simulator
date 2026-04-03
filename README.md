@@ -1,7 +1,7 @@
 Elevator_Simulator 🛗
 
 A cinematic, highly visual elevator simulation built with React, Framer Motion, and GSAP. Experience smooth, algorithmic dispatching of multi-car elevator networks featuring interactive internal and external control panels.
-
+Try - http://elevator-simulator.surge.sh/
 ✨ Features
 
 Algorithmic Dispatching: Smart elevator routing determines the most efficient car to answer an external call based on proximity, current direction, and queued targets.
