@@ -18,7 +18,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment Variables (Keep your secrets safe!)
 .env
 .env.local
 .env.development.local
@@ -41,8 +40,6 @@ Thumbs.db
 /coverage
 /.nyc_output
 
-# --- Hackathon/Project Clutter Prevention ---
-# These rules ignore common "noise" files in your root directory
 *.zip
 *.rar
 *.7z
